@@ -4,7 +4,8 @@ from pyspark.sql.functions import from_json, col
 from elasticsearch import Elasticsearch
 
 spark = SparkSession.builder.appName("Read From Kafka") \
-    .config("spark.jars.packages", "org.elasticsearch:elasticsearch-spark-30_2.12:7.12.1,org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1") \
+    .config("spark.jars.packages",
+            "org.elasticsearch:elasticsearch-spark-30_2.12:7.12.1,org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1") \
     .getOrCreate()
 
 # Set up Elasticsearch connection
@@ -51,9 +52,6 @@ office_index = {
 # Create the index with the mapping
 es.indices.create(index="office-index", body=office_index)
 
-
-
-
 df = spark \
     .readStream \
     .format("kafka") \
@@ -62,23 +60,20 @@ df = spark \
     .option("failOnDataLoss", "false") \
     .load()
 
-
-
-df2 = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)", "topic","partition","offset", "timestamp")
+df2 = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)", "topic", "partition", "offset", "timestamp")
 df3 = df2.withColumn("event_ts_min", F.split(F.col("value"), ",")[0].cast(TimestampType())) \
-.withColumn("ts_min_bignt", F.split(F.col("value"), ",")[1].cast(IntegerType())) \
-.withColumn("room", F.split(F.col("value"), ",")[2].cast(StringType())) \
-.withColumn("co2", F.split(F.col("value"), ",")[3].cast(IntegerType())) \
-.withColumn("light", F.split(F.col("value"), ",")[4].cast(FloatType())) \
-.withColumn("temperature", F.split(F.col("value"), ",")[5].cast(FloatType())) \
-.withColumn("humidity", F.split(F.col("value"), ",")[6].cast(FloatType())) \
-.withColumn("pir", F.split(F.col("value"), ",")[7].cast(FloatType())) \
-.drop("value")
+    .withColumn("ts_min_bignt", F.split(F.col("value"), ",")[1].cast(IntegerType())) \
+    .withColumn("room", F.split(F.col("value"), ",")[2].cast(StringType())) \
+    .withColumn("co2", F.split(F.col("value"), ",")[3].cast(IntegerType())) \
+    .withColumn("light", F.split(F.col("value"), ",")[4].cast(FloatType())) \
+    .withColumn("temperature", F.split(F.col("value"), ",")[5].cast(FloatType())) \
+    .withColumn("humidity", F.split(F.col("value"), ",")[6].cast(FloatType())) \
+    .withColumn("pir", F.split(F.col("value"), ",")[7].cast(FloatType())) \
+    .drop("value")
 
 
 # Write the data to Elasticsearch
 def writeToElasticsearch(df, epoch_id):
-
     df.write \
         .format("org.elasticsearch.spark.sql") \
         .option("es.nodes", "localhost") \
@@ -86,7 +81,6 @@ def writeToElasticsearch(df, epoch_id):
         .option("es.resource", "office-index") \
         .mode("append") \
         .save()
-
 
 
 checkpointDir = "file:///tmp/streaming/read_from_kafka_write_to_elastic2"
@@ -101,4 +95,3 @@ streamingQuery = df3.writeStream \
     .start()
 
 streamingQuery.awaitTermination()
-
