@@ -32,4 +32,12 @@
 
 Enter the text in this console to see logs from jupyter console on `docker`
 
+### Get jupyter server list
+
+`jupyter server list` 
+
+### Spark UI HOST `4041` OR `4042`
+
+`http://localhost:4041/jobs/`
+
 
